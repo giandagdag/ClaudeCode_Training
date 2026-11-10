@@ -12,7 +12,9 @@ A single-file demo Kanban board for a fictitious bank's IT PMO, built with vanil
 
 ## Live demo
 
-**<https://giandagdag.github.io/ClaudeCode_Training/>**
+**<https://giandagdag.github.io/ClaudeCode_Training/>** (original)
+
+**<https://giandagdag.github.io/ClaudeCode_Training/v2/>** (v2: Apple-style redesign, same features, in `v2/index.html`)
 
 ![IT PMO Kanban board](docs/screenshot.png)
 
@@ -96,11 +98,11 @@ While the placeholder `YOUR_EMAIL@example.com` is still in place, `notifyNewTask
 |---|---|
 | `checks` | Fails if `index.html` is missing or empty, if it uses browser storage APIs, `!important`, or external `<script src>`/`<link href>`, if it references any host other than `formsubmit.co` or `www.w3.org`, or if `FORMSUBMIT_ENDPOINT` contains a real email address. |
 | `secret-scan` | Runs [gitleaks](https://github.com/gitleaks/gitleaks-action) over the full git history. |
-| `deploy` | Runs only on `main`, and only after both jobs above pass. It stages **only** `index.html` into `_site/` and deploys it to GitHub Pages. |
+| `deploy` | Runs only on `main`, and only after both jobs above pass. It stages **only** `index.html` (at `/`) and `v2/index.html` (at `/v2/`) into `_site/` and deploys them to GitHub Pages. |
 
 ## Security and privacy
 
 - The only network call is the optional FormSubmit notification. Nothing else is fetched or sent.
 - The app uses no `localStorage`, `sessionStorage`, IndexedDB or cookies.
 - All user input is escaped before it is rendered.
-- Only `index.html` is published to Pages.
+- Only `index.html` and `v2/index.html` are published to Pages.

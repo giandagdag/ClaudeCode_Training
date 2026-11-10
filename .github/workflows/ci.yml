@@ -15,29 +15,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: index.html exists and is not empty
-        run: test -s index.html
+      - name: index.html and v2/index.html exist and are not empty
+        run: test -s index.html && test -s v2/index.html
 
       - name: Guard - no storage, !important, or external scripts/styles
         run: |
           fail=0
-          if grep -nE 'localStorage|sessionStorage|indexedDB|document\.cookie' index.html; then
+          if grep -nE 'localStorage|sessionStorage|indexedDB|document\.cookie' index.html v2/index.html; then
             echo "::error::Browser storage API found (app must not persist data)"; fail=1
           fi
-          if grep -n '!important' index.html; then
+          if grep -n '!important' index.html v2/index.html; then
             echo "::error::!important found in CSS"; fail=1
           fi
-          if grep -nEi '<script[^>]+src=' index.html; then
+          if grep -nEi '<script[^>]+src=' index.html v2/index.html; then
             echo "::error::External <script src> found"; fail=1
           fi
-          if grep -nEi "<link[^>]+href=[\"']https?:" index.html; then
+          if grep -nEi "<link[^>]+href=[\"']https?:" index.html v2/index.html; then
             echo "::error::External <link href> found"; fail=1
           fi
           exit $fail
 
       - name: Guard - network allowlist
         run: |
-          bad=$(grep -oE 'https?://[^"'"'"' <>)]+' index.html \
+          bad=$(grep -ohE 'https?://[^"'"'"' <>)]+' index.html v2/index.html \
             | sed -E 's#^https?://([^/:]+).*#\1#' \
             | sort -u \
             | grep -vxE 'formsubmit\.co|www\.w3\.org' || true)
@@ -48,12 +48,14 @@ jobs:
 
       - name: Guard - no real email in FORMSUBMIT_ENDPOINT
         run: |
-          line=$(grep -E 'const[[:space:]]+FORMSUBMIT_ENDPOINT' index.html || true)
-          if [ -z "$line" ]; then echo "::error::FORMSUBMIT_ENDPOINT not found"; exit 1; fi
-          rest=$(printf '%s' "$line" | sed 's/YOUR_EMAIL@example\.com//g')
-          if printf '%s' "$rest" | grep -q '@'; then
-            echo "::error::FORMSUBMIT_ENDPOINT contains an email address. Use a FormSubmit alias instead."; exit 1
-          fi
+          for f in index.html v2/index.html; do
+            line=$(grep -E 'const[[:space:]]+FORMSUBMIT_ENDPOINT' "$f" || true)
+            if [ -z "$line" ]; then echo "::error::FORMSUBMIT_ENDPOINT not found in $f"; exit 1; fi
+            rest=$(printf '%s' "$line" | sed 's/YOUR_EMAIL@example\.com//g')
+            if printf '%s' "$rest" | grep -q '@'; then
+              echo "::error::FORMSUBMIT_ENDPOINT in $f contains an email address. Use a FormSubmit alias instead."; exit 1
+            fi
+          done
           echo "FORMSUBMIT_ENDPOINT is safe."
 
   secret-scan:
@@ -82,8 +84,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Stage site (index.html only)
-        run: mkdir _site && cp index.html _site/
+      - name: Stage site (original at /, redesign at /v2/)
+        run: mkdir -p _site/v2 && cp index.html _site/ && cp v2/index.html _site/v2/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
