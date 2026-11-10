@@ -18,6 +18,10 @@ A single-file demo Kanban board for a fictitious bank's IT PMO, built with vanil
 
 ![IT PMO Kanban board](docs/screenshot.png)
 
+**v2 redesign** (translucent chrome, progress overview, segmented priority filter, light/dark themes):
+
+![IT PMO Kanban board v2](docs/screenshot-v2.png)
+
 ## Features
 
 - **Four columns:** Backlog, In Progress, Blocked and Done, with a summary strip in the header that counts every task.
@@ -58,11 +62,18 @@ flowchart LR
 ```
 .
 ├── index.html                # The whole app: markup, <style>, <script>
+├── v2/
+│   └── index.html            # v2 redesign: same state model and features, new visuals
 ├── README.md
 ├── CLAUDE.md                 # Guidance for Claude Code / contributors
 ├── .gitignore
+├── .mcp.json                 # Playwright MCP server (used for README screenshots)
 ├── docs/
-│   └── screenshot.png        # README screenshot (not deployed)
+│   ├── screenshot.png        # README screenshot, original (not deployed)
+│   └── screenshot-v2.png     # README screenshot, v2 (not deployed)
+├── .claude/
+│   └── commands/
+│       └── publish-github.md # /publish-github workflow
 └── .github/
     └── workflows/
         └── ci.yml            # Checks, secret scan, Pages deploy
@@ -96,7 +107,7 @@ While the placeholder `YOUR_EMAIL@example.com` is still in place, `notifyNewTask
 
 | Job | What it does |
 |---|---|
-| `checks` | Fails if `index.html` is missing or empty, if it uses browser storage APIs, `!important`, or external `<script src>`/`<link href>`, if it references any host other than `formsubmit.co` or `www.w3.org`, or if `FORMSUBMIT_ENDPOINT` contains a real email address. |
+| `checks` | Runs on both `index.html` and `v2/index.html`. Fails if either is missing or empty, if it uses browser storage APIs, `!important`, or external `<script src>`/`<link href>`, if it references any host other than `formsubmit.co` or `www.w3.org`, or if `FORMSUBMIT_ENDPOINT` contains a real email address. |
 | `secret-scan` | Runs [gitleaks](https://github.com/gitleaks/gitleaks-action) over the full git history. |
 | `deploy` | Runs only on `main`, and only after both jobs above pass. It stages **only** `index.html` (at `/`) and `v2/index.html` (at `/v2/`) into `_site/` and deploys them to GitHub Pages. |
 
