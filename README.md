@@ -14,6 +14,8 @@ A single-file demo Kanban board for a fictitious bank's IT PMO, built with vanil
 
 **<https://giandagdag.github.io/ClaudeCode_Training/>**
 
+![IT PMO Kanban board](docs/screenshot.png)
+
 ## Features
 
 - **Four columns:** Backlog, In Progress, Blocked and Done, with a summary strip in the header that counts every task.
@@ -57,6 +59,8 @@ flowchart LR
 ├── README.md
 ├── CLAUDE.md                 # Guidance for Claude Code / contributors
 ├── .gitignore
+├── docs/
+│   └── screenshot.png        # README screenshot (not deployed)
 └── .github/
     └── workflows/
         └── ci.yml            # Checks, secret scan, Pages deploy
