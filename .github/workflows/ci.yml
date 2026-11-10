@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: index.html exists and is not empty
+        run: test -s index.html
+
+      - name: Guard - no storage, !important, or external scripts/styles
+        run: |
+          fail=0
+          if grep -nE 'localStorage|sessionStorage|indexedDB|document\.cookie' index.html; then
+            echo "::error::Browser storage API found (app must not persist data)"; fail=1
+          fi
+          if grep -n '!important' index.html; then
+            echo "::error::!important found in CSS"; fail=1
+          fi
+          if grep -nEi '<script[^>]+src=' index.html; then
+            echo "::error::External <script src> found"; fail=1
+          fi
+          if grep -nEi "<link[^>]+href=[\"']https?:" index.html; then
+            echo "::error::External <link href> found"; fail=1
+          fi
+          exit $fail
+
+      - name: Guard - network allowlist
+        run: |
+          bad=$(grep -oE 'https?://[^"'"'"' <>)]+' index.html \
+            | sed -E 's#^https?://([^/:]+).*#\1#' \
+            | sort -u \
+            | grep -vxE 'formsubmit\.co|www\.w3\.org' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Disallowed hosts in index.html:"; echo "$bad"; exit 1
+          fi
+          echo "All URLs are on the allowlist."
+
+      - name: Guard - no real email in FORMSUBMIT_ENDPOINT
+        run: |
+          line=$(grep -E 'const[[:space:]]+FORMSUBMIT_ENDPOINT' index.html || true)
+          if [ -z "$line" ]; then echo "::error::FORMSUBMIT_ENDPOINT not found"; exit 1; fi
+          rest=$(printf '%s' "$line" | sed 's/YOUR_EMAIL@example\.com//g')
+          if printf '%s' "$rest" | grep -q '@'; then
+            echo "::error::FORMSUBMIT_ENDPOINT contains an email address. Use a FormSubmit alias instead."; exit 1
+          fi
+          echo "FORMSUBMIT_ENDPOINT is safe."
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    needs: [checks, secret-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage site (index.html only)
+        run: mkdir _site && cp index.html _site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
